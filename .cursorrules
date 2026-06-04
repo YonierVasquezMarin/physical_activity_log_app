@@ -1,0 +1,11 @@
+# Reglas para Cursor AI
+
+## Idioma y Comunicación
+- Todos los mensajes de commit deben generarse en español
+- Los mensajes de commit deben ser claros, descriptivos y seguir las convanciones de commits convencionales
+- Siempre usar español para cualquier comunicación o documentación generada
+
+## Formato de Commits
+- Usar formato: tipo(alcance): descripción breve
+- Tipos comunes: feat, fix, docs, style, refactor, test, chore
+- Ejemplo: "feat(auth): agregar autenticación con Firebase"
