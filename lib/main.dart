@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:physical_activity_log_app/providers/auth_provider.dart';
 import 'package:physical_activity_log_app/screens/login_screen.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
@@ -11,18 +13,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Registro de Actividad Física',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primaryTeal,
-          primary: AppColors.primaryTeal,
+    return ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: MaterialApp(
+        title: 'Registro de Actividad Física',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.primaryTeal,
+            primary: AppColors.primaryTeal,
+          ),
+          scaffoldBackgroundColor: AppColors.screenBackground,
+          useMaterial3: true,
         ),
-        scaffoldBackgroundColor: AppColors.screenBackground,
-        useMaterial3: true,
+        home: const LoginScreen(),
       ),
-      home: const LoginScreen(),
     );
   }
 }
