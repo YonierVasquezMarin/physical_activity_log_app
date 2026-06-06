@@ -16,19 +16,41 @@ class AuthHeaderComponent extends StatelessWidget {
     return Container(
       height: height,
       width: double.infinity,
-      color: AppColors.primaryTeal,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF111113),
+            AppColors.primary,
+            Color(0xFF2A2A2E),
+          ],
+        ),
+      ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned(
-            top: -20,
-            left: -30,
+            top: -30,
+            left: -40,
             child: Container(
-              width: 140,
-              height: 140,
-              decoration: const BoxDecoration(
-                color: AppColors.mintGreen,
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                color: AppColors.accent.withValues(alpha: 0.15),
+              ),
+            ),
+          ),
+          Positioned(
+            top: height * 0.12,
+            right: -20,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.steelGrey.withValues(alpha: 0.2),
               ),
             ),
           ),
@@ -40,7 +62,7 @@ class AuthHeaderComponent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Hola!',
+                    '¡A entrenar!',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 36,
@@ -49,9 +71,9 @@ class AuthHeaderComponent extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Aquí podrás registrar tu actividad física',
+                    'Registra tus entrenamientos y progreso',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 16,
                     ),
                   ),
@@ -62,7 +84,7 @@ class AuthHeaderComponent extends StatelessWidget {
             Positioned(
               right: 24,
               bottom: -10,
-              child: _PlantIllustration(),
+              child: const _DumbbellIllustration(),
             ),
         ],
       ),
@@ -70,53 +92,73 @@ class AuthHeaderComponent extends StatelessWidget {
   }
 }
 
-class _PlantIllustration extends StatelessWidget {
+class _DumbbellIllustration extends StatelessWidget {
+  const _DumbbellIllustration();
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 90,
-      height: 110,
+      width: 100,
+      height: 56,
       child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
+        alignment: Alignment.center,
         children: [
-          Positioned(
-            bottom: 28,
-            left: 18,
-            child: Transform.rotate(
-              angle: -0.35,
-              child: Container(
-                width: 14,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.mintGreen,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 30,
-            right: 18,
-            child: Transform.rotate(
-              angle: 0.35,
-              child: Container(
-                width: 14,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.mintGreen,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
-          ),
           Container(
-            width: 52,
-            height: 36,
+            width: 72,
+            height: 8,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(6),
+              color: AppColors.steelGrey,
+              borderRadius: BorderRadius.circular(4),
             ),
+          ),
+          Positioned(
+            left: 0,
+            child: _WeightPlate(size: 44),
+          ),
+          Positioned(
+            right: 0,
+            child: _WeightPlate(size: 44),
+          ),
+          Positioned(
+            left: 14,
+            child: _WeightPlate(size: 28, inner: true),
+          ),
+          Positioned(
+            right: 14,
+            child: _WeightPlate(size: 28, inner: true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeightPlate extends StatelessWidget {
+  final double size;
+  final bool inner;
+
+  const _WeightPlate({
+    required this.size,
+    this.inner = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size * 0.35,
+      height: size,
+      decoration: BoxDecoration(
+        color: inner ? AppColors.plateGrey : AppColors.primary,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: inner ? AppColors.steelGrey : AppColors.accent.withValues(alpha: 0.6),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),

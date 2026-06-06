@@ -42,7 +42,7 @@ class _InitScreenState extends State<InitScreen> {
         backgroundColor: AppColors.screenBackground,
         body: Center(
           child: CircularProgressIndicator(
-            color: AppColors.primaryTeal,
+            color: AppColors.accent,
           ),
         ),
       );
