@@ -153,14 +153,14 @@ class _SignUpFormCardState extends State<_SignUpFormCard> {
                 children: [
                   Icon(
                     Icons.arrow_back,
-                    color: AppColors.primaryTeal,
+                    color: AppColors.accent,
                     size: 18,
                   ),
                   SizedBox(width: 6),
                   Text(
-                    'Back to login',
+                    'Volver al login',
                     style: TextStyle(
-                      color: AppColors.primaryTeal,
+                      color: AppColors.accent,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -172,7 +172,7 @@ class _SignUpFormCardState extends State<_SignUpFormCard> {
             const Text(
               'Sign Up',
               style: TextStyle(
-                color: AppColors.primaryTeal,
+                color: AppColors.primary,
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
@@ -180,7 +180,7 @@ class _SignUpFormCardState extends State<_SignUpFormCard> {
             const SizedBox(height: 24),
             AuthInputComponent(
               icon: Icons.person_outline,
-              hintText: 'Full Name',
+              hintText: 'Nombre completo',
               controller: _nameController,
               maxLength: InputLimits.nameMax,
               errorText: _nameError,
@@ -207,7 +207,7 @@ class _SignUpFormCardState extends State<_SignUpFormCard> {
             const SizedBox(height: 16),
             AuthInputComponent(
               icon: Icons.lock_outline,
-              hintText: 'Password',
+              hintText: 'Contraseña',
               isPassword: true,
               controller: _passwordController,
               maxLength: InputLimits.passwordMax,
@@ -221,7 +221,7 @@ class _SignUpFormCardState extends State<_SignUpFormCard> {
             const SizedBox(height: 16),
             AuthInputComponent(
               icon: Icons.lock_outline,
-              hintText: 'Confirm Password',
+              hintText: 'Confirmar contraseña',
               isPassword: true,
               controller: _confirmPasswordController,
               maxLength: InputLimits.passwordMax,
@@ -242,7 +242,7 @@ class _SignUpFormCardState extends State<_SignUpFormCard> {
                   fullWidth: true,
                   fullyRoundedSides: true,
                   size: ButtonComponentSize.large,
-                  color: AppColors.primaryTeal,
+                  color: AppColors.accent,
                   elevation: 0,
                   onPressed: _handleSignUp,
                 ),

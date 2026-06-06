@@ -126,7 +126,7 @@ class _LoginFormCardState extends State<_LoginFormCard> {
             const Text(
               'Login',
               style: TextStyle(
-                color: AppColors.primaryTeal,
+                color: AppColors.primary,
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
@@ -148,7 +148,7 @@ class _LoginFormCardState extends State<_LoginFormCard> {
             const SizedBox(height: 16),
             AuthInputComponent(
               icon: Icons.lock_outline,
-              hintText: 'Password',
+              hintText: 'Contraseña',
               isPassword: true,
               controller: _passwordController,
               maxLength: InputLimits.passwordMax,
@@ -169,7 +169,7 @@ class _LoginFormCardState extends State<_LoginFormCard> {
                   fullWidth: true,
                   fullyRoundedSides: true,
                   size: ButtonComponentSize.large,
-                  color: AppColors.primaryTeal,
+                  color: AppColors.accent,
                   elevation: 0,
                   onPressed: _handleLogin,
                 ),
@@ -184,16 +184,16 @@ class _LoginFormCardState extends State<_LoginFormCard> {
                     fontSize: 14,
                   ),
                   children: [
-                    const TextSpan(text: "Don't have account? "),
+                    const TextSpan(text: "¿No tienes una cuenta? "),
                     WidgetSpan(
                       alignment: PlaceholderAlignment.baseline,
                       baseline: TextBaseline.alphabetic,
                       child: GestureDetector(
                         onTap: _isLoading ? null : widget.onSignUpPressed,
                         child: const Text(
-                          'Sign Up',
+                          'Registrate',
                           style: TextStyle(
-                            color: AppColors.primaryTeal,
+                            color: AppColors.accent,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
