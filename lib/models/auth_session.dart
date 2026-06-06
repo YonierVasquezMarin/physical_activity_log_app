@@ -14,4 +14,18 @@ class AuthSession {
   });
 
   String get authorizationHeader => '$tokenType $token';
+
+  Map<String, dynamic> toJson() => {
+        'token': token,
+        'tokenType': tokenType,
+        'expiresIn': expiresIn,
+        'user': user.toJson(),
+      };
+
+  factory AuthSession.fromJson(Map<String, dynamic> json) => AuthSession(
+        token: json['token'] as String,
+        tokenType: json['tokenType'] as String,
+        expiresIn: json['expiresIn'] as int,
+        user: User.fromJson(json['user'] as Map<String, dynamic>),
+      );
 }

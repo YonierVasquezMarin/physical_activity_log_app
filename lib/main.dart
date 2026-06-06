@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:physical_activity_log_app/providers/auth_provider.dart';
-import 'package:physical_activity_log_app/screens/login_screen.dart';
+import 'package:physical_activity_log_app/screens/init_screen.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
 void main() {
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: AppColors.screenBackground,
           useMaterial3: true,
         ),
-        home: const LoginScreen(),
+        home: const InitScreen(),
       ),
     );
   }

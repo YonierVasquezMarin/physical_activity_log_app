@@ -5,14 +5,19 @@ import 'package:physical_activity_log_app/exceptions/api_exception.dart';
 import 'package:physical_activity_log_app/models/auth_session.dart';
 import 'package:physical_activity_log_app/models/user.dart';
 import 'package:physical_activity_log_app/services/auth_service.dart';
+import 'package:physical_activity_log_app/services/session_storage_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
+  final SessionStorageService _sessionStorage;
 
   AuthSession? _session;
 
-  AuthProvider({AuthService? authService})
-      : _authService = authService ?? AuthService();
+  AuthProvider({
+    AuthService? authService,
+    SessionStorageService? sessionStorage,
+  })  : _authService = authService ?? AuthService(),
+        _sessionStorage = sessionStorage ?? SessionStorageService();
 
   String? get token => _session?.token;
   String? get tokenType => _session?.tokenType;
@@ -29,6 +34,7 @@ class AuthProvider extends ChangeNotifier {
       LoginRequestDto(email: email.trim(), password: password),
     );
     _session = session;
+    await _sessionStorage.saveSession(session);
     notifyListeners();
   }
 
@@ -49,11 +55,37 @@ class AuthProvider extends ChangeNotifier {
       LoginRequestDto(email: email.trim(), password: password),
     );
     _session = session;
+    await _sessionStorage.saveSession(session);
     notifyListeners();
   }
 
-  void logout() {
+  Future<bool> tryRestoreSession() async {
+    final storedSession = await _sessionStorage.loadSession();
+    if (storedSession == null) {
+      return false;
+    }
+
+    try {
+      final user = await _authService.getCurrentUser(
+        storedSession.authorizationHeader,
+      );
+      _session = AuthSession(
+        token: storedSession.token,
+        tokenType: storedSession.tokenType,
+        expiresIn: storedSession.expiresIn,
+        user: user,
+      );
+      notifyListeners();
+      return true;
+    } catch (_) {
+      await _sessionStorage.clearSession();
+      return false;
+    }
+  }
+
+  Future<void> logout() async {
     _session = null;
+    await _sessionStorage.clearSession();
     notifyListeners();
   }
 
