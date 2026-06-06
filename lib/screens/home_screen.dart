@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:physical_activity_log_app/components/app_bottom_message.dart';
-import 'package:physical_activity_log_app/providers/auth_provider.dart';
+import 'package:physical_activity_log_app/screens/goals_screen.dart';
+import 'package:physical_activity_log_app/screens/reports_screen.dart';
+import 'package:physical_activity_log_app/screens/sessions_screen.dart';
+import 'package:physical_activity_log_app/screens/settings_screen.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,6 +16,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
+  static const _screens = <Widget>[
+    SessionsScreen(),
+    GoalsScreen(),
+    ReportsScreen(),
+    SettingsScreen(),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -32,21 +43,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userName = context.watch<AuthProvider>().user?.name ?? '';
-
     return Scaffold(
       backgroundColor: AppColors.screenBackground,
-      body: SafeArea(
-        child: Center(
-          child: Text(
-            userName,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _currentIndex,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.bodyTextGrey,
+        backgroundColor: AppColors.screenBackground,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center_outlined),
+            activeIcon: Icon(Icons.fitness_center),
+            label: 'Sesiones',
           ),
-        ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.flag_outlined),
+            activeIcon: Icon(Icons.flag),
+            label: 'Metas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics_outlined),
+            activeIcon: Icon(Icons.analytics),
+            label: 'Reportes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: 'Ajustes',
+          ),
+        ],
       ),
     );
   }
