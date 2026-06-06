@@ -21,9 +21,9 @@ class AuthHeaderComponent extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF111113),
+            AppColors.primaryDark,
             AppColors.primary,
-            Color(0xFF2A2A2E),
+            AppColors.primaryDeep,
           ],
         ),
       ),
@@ -38,7 +38,7 @@ class AuthHeaderComponent extends StatelessWidget {
               height: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.15),
+                color: AppColors.highlight.withValues(alpha: 0.2),
               ),
             ),
           ),
@@ -148,10 +148,10 @@ class _WeightPlate extends StatelessWidget {
       width: size * 0.35,
       height: size,
       decoration: BoxDecoration(
-        color: inner ? AppColors.plateGrey : AppColors.primary,
+        color: inner ? AppColors.plateGrey : AppColors.steelGrey,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: inner ? AppColors.steelGrey : AppColors.accent.withValues(alpha: 0.6),
+          color: inner ? AppColors.plateGrey : AppColors.highlight.withValues(alpha: 0.55),
           width: 2,
         ),
         boxShadow: [

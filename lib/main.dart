@@ -20,10 +20,11 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.accent,
+            seedColor: AppColors.primary,
             brightness: Brightness.light,
             primary: AppColors.primary,
             secondary: AppColors.accent,
+            tertiary: AppColors.highlight,
           ),
           scaffoldBackgroundColor: AppColors.screenBackground,
           useMaterial3: true,
