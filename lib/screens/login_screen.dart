@@ -92,7 +92,9 @@ class _LoginFormCardState extends State<_LoginFormCard> {
       if (!mounted) return;
 
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+        MaterialPageRoute<void>(
+          builder: (_) => const HomeScreen(showSuccessMessage: true),
+        ),
         (_) => false,
       );
     } catch (error) {

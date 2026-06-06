@@ -104,18 +104,10 @@ class _SignUpFormCardState extends State<_SignUpFormCard> {
 
       if (!mounted) return;
 
-      AppBottomMessage.show(
-        context,
-        message: 'Registro exitoso',
-        type: AppBottomMessageType.success,
-      );
-
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-
-      if (!mounted) return;
-
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+        MaterialPageRoute<void>(
+          builder: (_) => const HomeScreen(showSuccessMessage: true),
+        ),
         (_) => false,
       );
     } catch (error) {
