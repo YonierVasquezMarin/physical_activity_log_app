@@ -123,7 +123,11 @@ class SessionsScreen extends StatelessWidget {
       color: AppColors.screenBackground,
       child: SafeArea(
         child: sessions.isEmpty
-            ? const EmptyStateComponent(message: 'Sin sesiones registradas')
+            ? const EmptyStateComponent(
+                message: 'Sin sesiones registradas',
+                description:
+                    'Registra tu primera sesión de entrenamiento para comenzar con tu historial.',
+              )
             : _SessionsList(
                 groupedSessions: _groupByDay(sessions),
               ),

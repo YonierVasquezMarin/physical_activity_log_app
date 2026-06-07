@@ -5,11 +5,13 @@ class EmptyStateComponent extends StatelessWidget {
   const EmptyStateComponent({
     super.key,
     required this.message,
+    required this.description,
   });
 
   final String message;
+  final String description;
 
-  static const _imagePath = 'assets/icon/app_icon.png';
+  static const _imagePath = 'assets/graphics/add_data.png';
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +34,16 @@ class EmptyStateComponent extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
+                color: AppColors.bodyTextGrey,
+              ),
+            ),
+            const SizedBox(height: 22),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.normal,
                 color: AppColors.bodyTextGrey,
               ),
             ),
