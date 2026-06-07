@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:physical_activity_log_app/components/empty_state_component.dart';
 import 'package:physical_activity_log_app/components/training_session_card.dart';
 import 'package:physical_activity_log_app/models/training_session.dart';
+import 'package:physical_activity_log_app/screens/training_session_form_screen.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
 class SessionsScreen extends StatelessWidget {
@@ -115,13 +116,40 @@ class SessionsScreen extends StatelessWidget {
     return {for (final key in sortedKeys) key: grouped[key]!};
   }
 
+  void _openCreateSession(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const TrainingSessionFormScreen(),
+      ),
+    );
+  }
+
+  void _openSessionDetail(BuildContext context, TrainingSession session) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TrainingSessionFormScreen(session: session),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final sessions = _testSessions;
 
-    return ColoredBox(
-      color: AppColors.screenBackground,
-      child: SafeArea(
+    return Scaffold(
+      backgroundColor: AppColors.screenBackground,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openCreateSession(context),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.add),
+        label: const Text(
+          'Nueva sesión',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+      body: SafeArea(
         child: sessions.isEmpty
             ? const EmptyStateComponent(
                 message: 'Sin sesiones registradas',
@@ -130,6 +158,8 @@ class SessionsScreen extends StatelessWidget {
               )
             : _SessionsList(
                 groupedSessions: _groupByDay(sessions),
+                onSessionTap: (session) =>
+                    _openSessionDetail(context, session),
               ),
       ),
     );
@@ -137,9 +167,13 @@ class SessionsScreen extends StatelessWidget {
 }
 
 class _SessionsList extends StatelessWidget {
-  const _SessionsList({required this.groupedSessions});
+  const _SessionsList({
+    required this.groupedSessions,
+    required this.onSessionTap,
+  });
 
   final Map<DateTime, List<TrainingSession>> groupedSessions;
+  final ValueChanged<TrainingSession> onSessionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +201,7 @@ class _SessionsList extends StatelessWidget {
             session: session,
             backgroundColor: SessionsScreen
                 ._cardColors[colorIndex % SessionsScreen._cardColors.length],
+            onTap: () => onSessionTap(session),
           ),
         );
         colorIndex++;
