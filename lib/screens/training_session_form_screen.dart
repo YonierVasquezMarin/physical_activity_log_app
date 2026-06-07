@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:physical_activity_log_app/components/app_bottom_message.dart';
 import 'package:physical_activity_log_app/components/button_component.dart';
+import 'package:physical_activity_log_app/components/confirm_dialog_component.dart';
 import 'package:physical_activity_log_app/models/activity.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
@@ -258,6 +259,21 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          if (widget.isEditing)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                onPressed: () => ConfirmDialogComponent.show(
+                  context,
+                  message: '¿Deseas eliminar esta sesión?',
+                ),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                color: const Color(0xFFD32F2F),
+                tooltip: 'Eliminar sesión',
+              ),
+            ),
+        ],
       ),
       body: SafeArea(
         child: Column(
