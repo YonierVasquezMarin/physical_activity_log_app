@@ -1,36 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:physical_activity_log_app/components/app_bottom_message.dart';
 import 'package:physical_activity_log_app/components/button_component.dart';
-import 'package:physical_activity_log_app/models/training_session.dart';
+import 'package:physical_activity_log_app/models/activity.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
 class TrainingSessionFormScreen extends StatefulWidget {
   const TrainingSessionFormScreen({
     super.key,
-    this.session,
+    this.isEditing = false,
   });
 
-  final TrainingSession? session;
-
-  bool get isViewMode => session != null;
+  final bool isEditing;
 
   @override
   State<TrainingSessionFormScreen> createState() =>
       _TrainingSessionFormScreenState();
 }
 
+class _ActivityFormEntry {
+  _ActivityFormEntry({
+    required this.categoryId,
+    required this.nameController,
+    required this.descriptionController,
+  });
+
+  int categoryId;
+  final TextEditingController nameController;
+  final TextEditingController descriptionController;
+  String? nameError;
+}
+
 class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
-  static const _categories = <({int id, String name, IconData icon})>[
-    (id: 1, name: 'Fuerza', icon: Icons.fitness_center),
-    (id: 2, name: 'Cardio', icon: Icons.directions_run),
-    (id: 3, name: 'Funcional', icon: Icons.sports_gymnastics),
-    (id: 4, name: 'Movilidad', icon: Icons.accessibility_new),
-    (id: 5, name: 'Flexibilidad', icon: Icons.self_improvement),
-    (id: 6, name: 'HIIT', icon: Icons.bolt),
-    (id: 7, name: 'Resistencia', icon: Icons.timer),
-    (id: 8, name: 'CrossFit', icon: Icons.sports_martial_arts),
-    (id: 9, name: 'Yoga', icon: Icons.spa),
-    (id: 10, name: 'Natación', icon: Icons.pool),
+  static const _categories = <({int id, String name})>[
+    (id: 1, name: 'Cardio'),
   ];
 
   static const _months = <String>[
@@ -48,28 +50,64 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
     'diciembre',
   ];
 
+  static final _editModeTestDate = DateTime(2025, 6, 6, 7, 30);
+  static const _editModeTestObservations =
+      'Sesión matutina con enfoque en resistencia cardiovascular.';
+  static const _editModeTestActivities = <Activity>[
+    Activity(
+      categoryId: 1,
+      name: 'Correr 5 km',
+      description: 'Trote continuo en parque',
+    ),
+    Activity(
+      categoryId: 1,
+      name: 'Saltos de cuerda',
+      description: '3 series de 2 minutos con descanso activo',
+    ),
+  ];
+
   late final TextEditingController _observationsController;
   late DateTime _selectedDate;
-  late Set<int> _selectedCategoryIds;
+  late List<_ActivityFormEntry> _activities;
 
   String? _dateError;
   String? _observationsError;
-  String? _categoriesError;
+  String? _activitiesError;
 
   @override
   void initState() {
     super.initState();
-    final session = widget.session;
-    _observationsController = TextEditingController(
-      text: session?.observations ?? '',
+
+    if (widget.isEditing) {
+      _observationsController = TextEditingController(
+        text: _editModeTestObservations,
+      );
+      _selectedDate = _editModeTestDate;
+      _activities = _editModeTestActivities
+          .map((activity) => _activityToEntry(activity))
+          .toList();
+    } else {
+      _observationsController = TextEditingController();
+      _selectedDate = DateTime.now();
+      _activities = [];
+    }
+  }
+
+  _ActivityFormEntry _activityToEntry(Activity activity) {
+    return _ActivityFormEntry(
+      categoryId: activity.categoryId,
+      nameController: TextEditingController(text: activity.name),
+      descriptionController: TextEditingController(text: activity.description),
     );
-    _selectedDate = session?.date ?? DateTime.now();
-    _selectedCategoryIds = session?.activityIds.toSet() ?? {};
   }
 
   @override
   void dispose() {
     _observationsController.dispose();
+    for (final entry in _activities) {
+      entry.nameController.dispose();
+      entry.descriptionController.dispose();
+    }
     super.dispose();
   }
 
@@ -80,16 +118,7 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
     return '${date.day} de $month ${date.year} · $hour:$minute';
   }
 
-  String _categoryName(int id) {
-    return _categories
-        .where((category) => category.id == id)
-        .map((category) => category.name)
-        .firstOrNull ?? 'Categoría $id';
-  }
-
   Future<void> _pickDate() async {
-    if (widget.isViewMode) return;
-
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -138,16 +167,33 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
     });
   }
 
-  void _toggleCategory(int id) {
-    if (widget.isViewMode) return;
+  void _addActivity() {
+    setState(() {
+      _activities.add(
+        _ActivityFormEntry(
+          categoryId: _categories.first.id,
+          nameController: TextEditingController(),
+          descriptionController: TextEditingController(),
+        ),
+      );
+      _activitiesError = null;
+    });
+  }
+
+  void _removeActivity(int index) {
+    setState(() {
+      final entry = _activities.removeAt(index);
+      entry.nameController.dispose();
+      entry.descriptionController.dispose();
+      _activitiesError = null;
+    });
+  }
+
+  void _updateActivityCategory(int index, int? categoryId) {
+    if (categoryId == null) return;
 
     setState(() {
-      if (_selectedCategoryIds.contains(id)) {
-        _selectedCategoryIds.remove(id);
-      } else {
-        _selectedCategoryIds.add(id);
-      }
-      _categoriesError = null;
+      _activities[index].categoryId = categoryId;
     });
   }
 
@@ -159,12 +205,19 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
       _observationsError =
           observations.isEmpty ? 'Las observaciones son obligatorias' : null;
       _dateError = null;
-      _categoriesError = _selectedCategoryIds.isEmpty
-          ? 'Selecciona al menos una categoría'
-          : null;
+      _activitiesError =
+          _activities.isEmpty ? 'Agrega al menos una actividad' : null;
+
+      for (final entry in _activities) {
+        final name = entry.nameController.text.trim();
+        entry.nameError = name.isEmpty ? 'El nombre es obligatorio' : null;
+        if (entry.nameError != null) {
+          isValid = false;
+        }
+      }
     });
 
-    if (_observationsError != null || _categoriesError != null) {
+    if (_observationsError != null || _activitiesError != null) {
       isValid = false;
     }
 
@@ -176,7 +229,9 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
 
     AppBottomMessage.show(
       context,
-      message: 'Formulario válido. El registro estará disponible próximamente.',
+      message: widget.isEditing
+          ? 'Formulario de edición válido. La actualización estará disponible próximamente.'
+          : 'Formulario válido. El registro estará disponible próximamente.',
       type: AppBottomMessageType.success,
     );
   }
@@ -195,7 +250,7 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          widget.isViewMode ? 'Detalle de sesión' : 'Nueva sesión',
+          widget.isEditing ? 'Editar sesión' : 'Nueva sesión',
           style: const TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.w700,
@@ -220,7 +275,6 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
                         label: _formatDate(_selectedDate),
                         errorText: _dateError,
                         onTap: _pickDate,
-                        readOnly: widget.isViewMode,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -230,40 +284,55 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
                       child: _ObservationsField(
                         controller: _observationsController,
                         errorText: _observationsError,
-                        readOnly: widget.isViewMode,
-                        onChanged: widget.isViewMode
-                            ? null
-                            : (_) => setState(() => _observationsError = null),
+                        onChanged: (_) =>
+                            setState(() => _observationsError = null),
                       ),
                     ),
                     const SizedBox(height: 16),
                     _SectionCard(
-                      title: 'Categorías',
-                      icon: Icons.category_outlined,
+                      title: 'Actividades',
+                      icon: Icons.directions_run_outlined,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (widget.isViewMode)
-                            _ViewCategoriesList(
-                              categoryIds: widget.session!.activityIds,
-                              categoryName: _categoryName,
-                            )
-                          else
-                            _CategoryGrid(
-                              categories: _categories,
-                              selectedIds: _selectedCategoryIds,
-                              onToggle: _toggleCategory,
+                          if (_activities.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
+                              child: Text(
+                                'Aún no hay actividades. Agrega la primera para esta sesión.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.bodyTextGrey,
+                                  height: 1.4,
+                                ),
+                              ),
                             ),
-                          if (_categoriesError != null) ...[
+                          for (var i = 0; i < _activities.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 12),
+                            _ActivityCard(
+                              index: i,
+                              entry: _activities[i],
+                              categories: _categories,
+                              onCategoryChanged: (categoryId) =>
+                                  _updateActivityCategory(i, categoryId),
+                              onRemove: () => _removeActivity(i),
+                              onNameChanged: () => setState(
+                                () => _activities[i].nameError = null,
+                              ),
+                            ),
+                          ],
+                          if (_activitiesError != null) ...[
                             const SizedBox(height: 8),
                             Text(
-                              _categoriesError!,
+                              _activitiesError!,
                               style: const TextStyle(
                                 color: Color(0xFFD32F2F),
                                 fontSize: 12,
                               ),
                             ),
                           ],
+                          const SizedBox(height: 16),
+                          _AddActivityButton(onPressed: _addActivity),
                         ],
                       ),
                     ),
@@ -271,16 +340,15 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
                 ),
               ),
             ),
-            if (!widget.isViewMode)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: ButtonComponent(
-                  label: 'Guardar sesión',
-                  iconData: Icons.check,
-                  fullWidth: true,
-                  onPressed: _handleSubmit,
-                ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: ButtonComponent(
+                label: widget.isEditing ? 'Actualizar sesión' : 'Guardar sesión',
+                iconData: Icons.check,
+                fullWidth: true,
+                onPressed: _handleSubmit,
               ),
+            ),
           ],
         ),
       ),
@@ -351,13 +419,11 @@ class _DateField extends StatelessWidget {
   const _DateField({
     required this.label,
     required this.onTap,
-    required this.readOnly,
     this.errorText,
   });
 
   final String label;
   final VoidCallback onTap;
-  final bool readOnly;
   final String? errorText;
 
   @override
@@ -370,15 +436,13 @@ class _DateField extends StatelessWidget {
         Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: readOnly ? null : onTap,
+            onTap: onTap,
             borderRadius: BorderRadius.circular(16),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: readOnly
-                    ? AppColors.screenBackground
-                    : Colors.white,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: hasError
@@ -388,31 +452,26 @@ class _DateField extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.event,
-                    color: readOnly
-                        ? AppColors.bodyTextGrey
-                        : AppColors.primary,
+                    color: AppColors.primary,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       label,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 15,
-                        color: readOnly
-                            ? AppColors.bodyTextGrey
-                            : Colors.black87,
+                        color: Colors.black87,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  if (!readOnly)
-                    const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.placeholderGrey,
-                    ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.placeholderGrey,
+                  ),
                 ],
               ),
             ),
@@ -436,13 +495,11 @@ class _DateField extends StatelessWidget {
 class _ObservationsField extends StatelessWidget {
   const _ObservationsField({
     required this.controller,
-    required this.readOnly,
     this.errorText,
     this.onChanged,
   });
 
   final TextEditingController controller;
-  final bool readOnly;
   final String? errorText;
   final ValueChanged<String>? onChanged;
 
@@ -455,7 +512,7 @@ class _ObservationsField extends StatelessWidget {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: readOnly ? AppColors.screenBackground : Colors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: hasError
@@ -465,23 +522,22 @@ class _ObservationsField extends StatelessWidget {
           ),
           child: TextField(
             controller: controller,
-            readOnly: readOnly,
             onChanged: onChanged,
             maxLines: 4,
             minLines: 3,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 15,
-              color: readOnly ? AppColors.bodyTextGrey : Colors.black87,
+              color: Colors.black87,
               height: 1.4,
             ),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               hintText: 'Describe tu entrenamiento...',
-              hintStyle: const TextStyle(
+              hintStyle: TextStyle(
                 color: AppColors.placeholderGrey,
                 fontSize: 15,
               ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(16),
+              contentPadding: EdgeInsets.all(16),
             ),
           ),
         ),
@@ -500,128 +556,272 @@ class _ObservationsField extends StatelessWidget {
   }
 }
 
-class _CategoryGrid extends StatelessWidget {
-  const _CategoryGrid({
+class _ActivityCard extends StatelessWidget {
+  const _ActivityCard({
+    required this.index,
+    required this.entry,
     required this.categories,
-    required this.selectedIds,
-    required this.onToggle,
+    required this.onCategoryChanged,
+    required this.onRemove,
+    required this.onNameChanged,
   });
 
-  final List<({int id, String name, IconData icon})> categories;
-  final Set<int> selectedIds;
-  final ValueChanged<int> onToggle;
+  final int index;
+  final _ActivityFormEntry entry;
+  final List<({int id, String name})> categories;
+  final ValueChanged<int?> onCategoryChanged;
+  final VoidCallback onRemove;
+  final VoidCallback onNameChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final category in categories)
-          _CategoryChip(
-            label: category.name,
-            icon: category.icon,
-            isSelected: selectedIds.contains(category.id),
-            onTap: () => onToggle(category.id),
-          ),
-      ],
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.12)
-                : AppColors.screenBackground,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.inputBorder,
-              width: isSelected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.screenBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.inputBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? AppColors.primary : AppColors.bodyTextGrey,
-              ),
-              const SizedBox(width: 6),
               Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? AppColors.primary : AppColors.bodyTextGrey,
+                'Actividad ${index + 1}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: onRemove,
+                icon: const Icon(Icons.delete_outline, size: 20),
+                color: const Color(0xFFD32F2F),
+                tooltip: 'Eliminar actividad',
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          const Text(
+            'Categoría',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.bodyTextGrey,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _CategoryDropdown(
+            value: entry.categoryId,
+            categories: categories,
+            onChanged: onCategoryChanged,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Nombre',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.bodyTextGrey,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _ActivityTextField(
+            controller: entry.nameController,
+            hintText: 'Ej. Correr 5 km',
+            errorText: entry.nameError,
+            onChanged: onNameChanged,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Descripción',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.bodyTextGrey,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _ActivityTextField(
+            controller: entry.descriptionController,
+            hintText: 'Ej. Trote continuo en parque',
+            maxLines: 3,
+            minLines: 2,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryDropdown extends StatelessWidget {
+  const _CategoryDropdown({
+    required this.value,
+    required this.categories,
+    required this.onChanged,
+  });
+
+  final int value;
+  final List<({int id, String name})> categories;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.inputBorder),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: value,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.primary),
+          items: [
+            for (final category in categories)
+              DropdownMenuItem<int>(
+                value: category.id,
+                child: Text(
+                  category.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+          ],
+          onChanged: onChanged,
         ),
       ),
     );
   }
 }
 
-class _ViewCategoriesList extends StatelessWidget {
-  const _ViewCategoriesList({
-    required this.categoryIds,
-    required this.categoryName,
+class _ActivityTextField extends StatelessWidget {
+  const _ActivityTextField({
+    required this.controller,
+    required this.hintText,
+    this.errorText,
+    this.onChanged,
+    this.maxLines = 1,
+    this.minLines = 1,
   });
 
-  final List<int> categoryIds;
-  final String Function(int id) categoryName;
+  final TextEditingController controller;
+  final String hintText;
+  final String? errorText;
+  final VoidCallback? onChanged;
+  final int maxLines;
+  final int minLines;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    final hasError = errorText != null && errorText!.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final id in categoryIds)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
-              ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: hasError
+                  ? const Color(0xFFD32F2F)
+                  : AppColors.inputBorder,
             ),
-            child: Text(
-              categoryName(id),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+          ),
+          child: TextField(
+            controller: controller,
+            onChanged: onChanged != null ? (_) => onChanged!() : null,
+            maxLines: maxLines,
+            minLines: minLines,
+            style: const TextStyle(
+              fontSize: 15,
+              color: Colors.black87,
+              height: 1.4,
+            ),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: const TextStyle(
+                color: AppColors.placeholderGrey,
+                fontSize: 15,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
               ),
             ),
           ),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Text(
+            errorText!,
+            style: const TextStyle(
+              color: Color(0xFFD32F2F),
+              fontSize: 12,
+            ),
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _AddActivityButton extends StatelessWidget {
+  const _AddActivityButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.35),
+            ),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add, size: 20, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text(
+                'Agregar actividad',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
