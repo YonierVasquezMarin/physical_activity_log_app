@@ -65,22 +65,9 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
 
-    try {
-      final user = await _authService.getCurrentUser(
-        storedSession.authorizationHeader,
-      );
-      _session = AuthSession(
-        token: storedSession.token,
-        tokenType: storedSession.tokenType,
-        expiresIn: storedSession.expiresIn,
-        user: user,
-      );
-      notifyListeners();
-      return true;
-    } catch (_) {
-      await _sessionStorage.clearSession();
-      return false;
-    }
+    _session = storedSession;
+    notifyListeners();
+    return true;
   }
 
   Future<void> logout() async {
