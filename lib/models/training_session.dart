@@ -1,12 +1,14 @@
 import 'package:physical_activity_log_app/models/activity.dart';
 
 class TrainingSession {
+  final int? id;
   final List<Activity> activities;
   final DateTime date;
   final String photoName;
   final String observations;
 
   const TrainingSession({
+    this.id,
     required this.activities,
     required this.date,
     required this.photoName,
@@ -15,6 +17,7 @@ class TrainingSession {
 
   factory TrainingSession.fromJson(Map<String, dynamic> json) =>
       TrainingSession(
+        id: json['id'] as int?,
         activities: (json['activities'] as List<dynamic>)
             .map((item) => Activity.fromJson(item as Map<String, dynamic>))
             .toList(),

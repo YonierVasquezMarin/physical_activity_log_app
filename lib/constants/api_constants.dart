@@ -5,4 +5,10 @@ abstract final class ApiConstants {
   static const String authRegister = '$baseUrl/auth/register';
   static const String authLogin = '$baseUrl/auth/login';
   static const String authMe = '$baseUrl/auth/me';
+
+  static const String categories = '$baseUrl/categories';
+  static const String activities = '$baseUrl/activities';
+  static const String trainingSessions = '$baseUrl/training-sessions';
+
+  static String trainingSession(int id) => '$trainingSessions/$id';
 }

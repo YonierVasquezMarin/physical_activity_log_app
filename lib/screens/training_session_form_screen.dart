@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:physical_activity_log_app/components/app_bottom_message.dart';
 import 'package:physical_activity_log_app/components/button_component.dart';
 import 'package:physical_activity_log_app/components/confirm_dialog_component.dart';
 import 'package:physical_activity_log_app/models/activity.dart';
+import 'package:physical_activity_log_app/models/training_session.dart';
+import 'package:physical_activity_log_app/providers/auth_provider.dart';
+import 'package:physical_activity_log_app/providers/training_sessions_provider.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
 class TrainingSessionFormScreen extends StatefulWidget {
   const TrainingSessionFormScreen({
     super.key,
-    this.isEditing = false,
+    this.session,
   });
 
-  final bool isEditing;
+  final TrainingSession? session;
+
+  bool get isEditing => session != null;
 
   @override
   State<TrainingSessionFormScreen> createState() =>
@@ -32,10 +38,6 @@ class _ActivityFormEntry {
 }
 
 class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
-  static const _categories = <({int id, String name})>[
-    (id: 1, name: 'Cardio'),
-  ];
-
   static const _months = <String>[
     'enero',
     'febrero',
@@ -51,47 +53,68 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
     'diciembre',
   ];
 
-  static final _editModeTestDate = DateTime(2025, 6, 6, 7, 30);
-  static const _editModeTestObservations =
-      'Sesión matutina con enfoque en resistencia cardiovascular.';
-  static const _editModeTestActivities = <Activity>[
-    Activity(
-      categoryId: 1,
-      name: 'Correr 5 km',
-      description: 'Trote continuo en parque',
-    ),
-    Activity(
-      categoryId: 1,
-      name: 'Saltos de cuerda',
-      description: '3 series de 2 minutos con descanso activo',
-    ),
-  ];
-
   late final TextEditingController _observationsController;
   late DateTime _selectedDate;
   late List<_ActivityFormEntry> _activities;
+  late final String _photoName;
 
   String? _dateError;
   String? _observationsError;
   String? _activitiesError;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
 
     if (widget.isEditing) {
+      final session = widget.session!;
       _observationsController = TextEditingController(
-        text: _editModeTestObservations,
+        text: session.observations,
       );
-      _selectedDate = _editModeTestDate;
-      _activities = _editModeTestActivities
+      _selectedDate = session.date.toLocal();
+      _photoName = session.photoName;
+      _activities = session.activities
           .map((activity) => _activityToEntry(activity))
           .toList();
     } else {
       _observationsController = TextEditingController();
       _selectedDate = DateTime.now();
+      _photoName = '';
       _activities = [];
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCategories());
+  }
+
+  Future<void> _loadCategories() async {
+    final authHeader = context.read<AuthProvider>().authorizationHeader;
+    if (authHeader == null) return;
+
+    try {
+      await context.read<TrainingSessionsProvider>().loadCategories(
+            authorizationHeader: authHeader,
+          );
+    } catch (error) {
+      if (!mounted) return;
+
+      AppBottomMessage.show(
+        context,
+        message: context
+            .read<TrainingSessionsProvider>()
+            .resolveErrorMessage(error),
+        type: AppBottomMessageType.error,
+      );
+    }
+  }
+
+  List<({int id, String name})> _mapCategories(
+    TrainingSessionsProvider provider,
+  ) {
+    return [
+      for (final category in provider.categories)
+        (id: category.id, name: category.name),
+    ];
   }
 
   _ActivityFormEntry _activityToEntry(Activity activity) {
@@ -168,11 +191,13 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
     });
   }
 
-  void _addActivity() {
+  void _addActivity(List<({int id, String name})> categories) {
+    if (categories.isEmpty) return;
+
     setState(() {
       _activities.add(
         _ActivityFormEntry(
-          categoryId: _categories.first.id,
+          categoryId: categories.first.id,
           nameController: TextEditingController(),
           descriptionController: TextEditingController(),
         ),
@@ -225,20 +250,120 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
     return isValid;
   }
 
-  void _handleSubmit() {
+  List<Activity> _buildActivities() {
+    return _activities
+        .map(
+          (entry) => Activity(
+            categoryId: entry.categoryId,
+            name: entry.nameController.text.trim(),
+            description: entry.descriptionController.text.trim(),
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> _handleSubmit() async {
     if (!_validateForm()) return;
 
-    AppBottomMessage.show(
-      context,
-      message: widget.isEditing
-          ? 'Formulario de edición válido. La actualización estará disponible próximamente.'
-          : 'Formulario válido. El registro estará disponible próximamente.',
-      type: AppBottomMessageType.success,
-    );
+    final authHeader = context.read<AuthProvider>().authorizationHeader;
+    if (authHeader == null) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final provider = context.read<TrainingSessionsProvider>();
+      final activities = _buildActivities();
+      final observations = _observationsController.text.trim();
+
+      if (widget.isEditing) {
+        await provider.updateSession(
+          authorizationHeader: authHeader,
+          id: widget.session!.id!,
+          activities: activities,
+          date: _selectedDate,
+          photoName: _photoName,
+          observations: observations,
+        );
+      } else {
+        await provider.createSession(
+          authorizationHeader: authHeader,
+          activities: activities,
+          date: _selectedDate,
+          observations: observations,
+        );
+      }
+
+      if (!mounted) return;
+
+      AppBottomMessage.show(
+        context,
+        message: widget.isEditing
+            ? 'Sesión actualizada correctamente.'
+            : 'Sesión registrada correctamente.',
+        type: AppBottomMessageType.success,
+      );
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+
+      AppBottomMessage.show(
+        context,
+        message: context
+            .read<TrainingSessionsProvider>()
+            .resolveErrorMessage(error),
+        type: AppBottomMessageType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _handleDelete() async {
+    final authHeader = context.read<AuthProvider>().authorizationHeader;
+    if (authHeader == null || widget.session?.id == null) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await context.read<TrainingSessionsProvider>().deleteSession(
+            authorizationHeader: authHeader,
+            id: widget.session!.id!,
+          );
+
+      if (!mounted) return;
+
+      AppBottomMessage.show(
+        context,
+        message: 'Sesión eliminada correctamente.',
+        type: AppBottomMessageType.success,
+      );
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+
+      AppBottomMessage.show(
+        context,
+        message: context
+            .read<TrainingSessionsProvider>()
+            .resolveErrorMessage(error),
+        type: AppBottomMessageType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final sessionsProvider = context.watch<TrainingSessionsProvider>();
+    final categories = _mapCategories(sessionsProvider);
+    final isLoadingCategories =
+        sessionsProvider.isLoadingCategories && categories.isEmpty;
+
     return Scaffold(
       backgroundColor: AppColors.screenBackground,
       appBar: AppBar(
@@ -264,10 +389,13 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
-                onPressed: () => ConfirmDialogComponent.show(
-                  context,
-                  message: '¿Deseas eliminar esta sesión?',
-                ),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => ConfirmDialogComponent.show(
+                          context,
+                          message: '¿Deseas eliminar esta sesión?',
+                          onConfirm: _handleDelete,
+                        ),
                 icon: const Icon(Icons.delete_outline, size: 20),
                 color: const Color(0xFFD32F2F),
                 tooltip: 'Eliminar sesión',
@@ -276,7 +404,11 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
         ],
       ),
       body: SafeArea(
-        child: Column(
+        child: isLoadingCategories
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              )
+            : Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
@@ -328,7 +460,7 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
                             _ActivityCard(
                               index: i,
                               entry: _activities[i],
-                              categories: _categories,
+                              categories: categories,
                               onCategoryChanged: (categoryId) =>
                                   _updateActivityCategory(i, categoryId),
                               onRemove: () => _removeActivity(i),
@@ -348,7 +480,11 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
                             ),
                           ],
                           const SizedBox(height: 16),
-                          _AddActivityButton(onPressed: _addActivity),
+                          _AddActivityButton(
+                            onPressed: categories.isEmpty || _isSubmitting
+                                ? null
+                                : () => _addActivity(categories),
+                          ),
                         ],
                       ),
                     ),
@@ -358,11 +494,23 @@ class _TrainingSessionFormScreenState extends State<TrainingSessionFormScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: ButtonComponent(
-                label: widget.isEditing ? 'Actualizar sesión' : 'Guardar sesión',
-                iconData: Icons.check,
-                fullWidth: true,
-                onPressed: _handleSubmit,
+              child: AbsorbPointer(
+                absorbing: _isSubmitting || categories.isEmpty,
+                child: Opacity(
+                  opacity: _isSubmitting || categories.isEmpty ? 0.7 : 1,
+                  child: ButtonComponent(
+                    label: _isSubmitting
+                        ? (widget.isEditing
+                            ? 'Actualizando...'
+                            : 'Guardando...')
+                        : (widget.isEditing
+                            ? 'Actualizar sesión'
+                            : 'Guardar sesión'),
+                    iconData: Icons.check,
+                    fullWidth: true,
+                    onPressed: _handleSubmit,
+                  ),
+                ),
               ),
             ),
           ],
@@ -802,7 +950,7 @@ class _ActivityTextField extends StatelessWidget {
 class _AddActivityButton extends StatelessWidget {
   const _AddActivityButton({required this.onPressed});
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

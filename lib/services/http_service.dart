@@ -35,6 +35,48 @@ class HttpService {
     );
   }
 
+  Future<List<dynamic>> getList(
+    String url, {
+    Map<String, String>? headers,
+  }) async {
+    return _handleListResponse(
+      await _client.get(
+        Uri.parse(url),
+        headers: _buildHeaders(headers),
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>> put(
+    String url, {
+    Map<String, dynamic>? body,
+    Map<String, String>? headers,
+  }) async {
+    return _handleResponse(
+      await _client.put(
+        Uri.parse(url),
+        headers: _buildHeaders(headers),
+        body: body != null ? jsonEncode(body) : null,
+      ),
+    );
+  }
+
+  Future<void> delete(
+    String url, {
+    Map<String, String>? headers,
+  }) async {
+    final response = await _client.delete(
+      Uri.parse(url),
+      headers: _buildHeaders(headers),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+
+    throw _parseError(response);
+  }
+
   Map<String, String> _buildHeaders(Map<String, String>? headers) {
     return {
       'Content-Type': 'application/json',
@@ -49,6 +91,17 @@ class HttpService {
         return {};
       }
       return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+
+    throw _parseError(response);
+  }
+
+  Future<List<dynamic>> _handleListResponse(http.Response response) async {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) {
+        return [];
+      }
+      return jsonDecode(response.body) as List<dynamic>;
     }
 
     throw _parseError(response);

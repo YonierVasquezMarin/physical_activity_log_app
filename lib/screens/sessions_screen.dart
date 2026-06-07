@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:physical_activity_log_app/components/empty_state_component.dart';
 import 'package:physical_activity_log_app/components/training_session_card.dart';
-import 'package:physical_activity_log_app/models/activity.dart';
 import 'package:physical_activity_log_app/models/training_session.dart';
+import 'package:physical_activity_log_app/providers/auth_provider.dart';
+import 'package:physical_activity_log_app/providers/training_sessions_provider.dart';
 import 'package:physical_activity_log_app/screens/training_session_form_screen.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
-class SessionsScreen extends StatelessWidget {
+class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
 
+  @override
+  State<SessionsScreen> createState() => _SessionsScreenState();
+}
+
+class _SessionsScreenState extends State<SessionsScreen> {
   static const _cardColors = <Color>[
     Color(0xFFE3F2FD),
     Color(0xFFEDE7F6),
@@ -42,134 +49,22 @@ class SessionsScreen extends StatelessWidget {
     'diciembre',
   ];
 
-  static final _testSessions = <TrainingSession>[
-    TrainingSession(
-      activities: const [
-        Activity(
-          categoryId: 1,
-          name: 'Press de banca',
-          description: '4 series de 10 repeticiones',
-        ),
-        Activity(
-          categoryId: 1,
-          name: 'Sentadillas',
-          description: '3 series de 12 repeticiones',
-        ),
-      ],
-      date: DateTime(2025, 6, 2, 7, 30),
-      photoName: 'hombre-lavantando-mancuernas.png',
-      observations: 'Ejercicios iniciales de fuerza',
-    ),
-    TrainingSession(
-      activities: const [
-        Activity(
-          categoryId: 1,
-          name: 'Correr 5 km',
-          description: 'Trote continuo en parque',
-        ),
-      ],
-      date: DateTime(2025, 6, 2, 18, 0),
-      photoName: 'hombre-corriendo.png',
-      observations: 'Cardio en cinta',
-    ),
-    TrainingSession(
-      activities: const [
-        Activity(
-          categoryId: 1,
-          name: 'Peso muerto',
-          description: '4 series de 8 repeticiones',
-        ),
-        Activity(
-          categoryId: 1,
-          name: 'Estiramientos',
-          description: 'Rutina de 10 minutos',
-        ),
-      ],
-      date: DateTime(2025, 6, 3, 6, 45),
-      photoName: 'mujer-lavantando-mancuernas.png',
-      observations: 'Rutina de piernas',
-    ),
-    TrainingSession(
-      activities: const [
-        Activity(
-          categoryId: 1,
-          name: 'Press inclinado',
-          description: '3 series de 12 repeticiones',
-        ),
-      ],
-      date: DateTime(2025, 6, 4, 8, 0),
-      photoName: 'hombre-con-musculos-posando-de-frente.png',
-      observations: 'Entrenamiento de pecho',
-    ),
-    TrainingSession(
-      activities: const [
-        Activity(
-          categoryId: 1,
-          name: 'Burpees',
-          description: '4 rondas de 30 segundos',
-        ),
-        Activity(
-          categoryId: 1,
-          name: 'Plancha',
-          description: '3 series de 45 segundos',
-        ),
-      ],
-      date: DateTime(2025, 6, 5, 17, 30),
-      photoName: 'mujer-haciendo-ejercicio-con-mancuerna.png',
-      observations: 'Circuito funcional',
-    ),
-    TrainingSession(
-      activities: const [
-        Activity(
-          categoryId: 1,
-          name: 'Correr 3 km',
-          description: 'Ritmo moderado',
-        ),
-        Activity(
-          categoryId: 1,
-          name: 'Saltos de cuerda',
-          description: '3 series de 2 minutos',
-        ),
-      ],
-      date: DateTime(2025, 6, 6, 7, 0),
-      photoName: 'hombre-trotando.png',
-      observations: 'Trote matutino',
-    ),
-    TrainingSession(
-      activities: const [
-        Activity(
-          categoryId: 1,
-          name: 'Press de banca',
-          description: '3 series de 10 repeticiones',
-        ),
-        Activity(
-          categoryId: 1,
-          name: 'Correr 2 km',
-          description: 'Calentamiento activo',
-        ),
-        Activity(
-          categoryId: 1,
-          name: 'Remo con mancuerna',
-          description: '3 series de 12 repeticiones',
-        ),
-      ],
-      date: DateTime(2025, 6, 6, 19, 15),
-      photoName: 'mujer-sonriendo-con-mancuerna.png',
-      observations: 'Sesión completa de cuerpo',
-    ),
-    TrainingSession(
-      activities: const [
-        Activity(
-          categoryId: 1,
-          name: 'Estiramientos dinámicos',
-          description: 'Rutina de 15 minutos',
-        ),
-      ],
-      date: DateTime(2025, 6, 7, 9, 0),
-      photoName: 'hombre-de-color-posando.png',
-      observations: 'Estiramientos y movilidad',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSessions());
+  }
+
+  Future<void> _loadSessions() async {
+    final authHeader = context.read<AuthProvider>().authorizationHeader;
+
+    if (authHeader == null) return;
+
+    await context.read<TrainingSessionsProvider>().loadSessions(
+          authorizationHeader: authHeader,
+        );
+  }
 
   static String _formatDayHeader(DateTime date) {
     final weekday = _weekdays[date.weekday - 1];
@@ -183,42 +78,55 @@ class SessionsScreen extends StatelessWidget {
     final grouped = <DateTime, List<TrainingSession>>{};
 
     for (final session in sessions) {
-      final dayKey = DateTime(session.date.year, session.date.month, session.date.day);
+      final localDate = session.date.toLocal();
+      final dayKey =
+          DateTime(localDate.year, localDate.month, localDate.day);
       grouped.putIfAbsent(dayKey, () => []).add(session);
     }
 
     for (final daySessions in grouped.values) {
-      daySessions.sort((a, b) => a.date.compareTo(b.date));
+      daySessions.sort(
+        (a, b) => a.date.toLocal().compareTo(b.date.toLocal()),
+      );
     }
 
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     return {for (final key in sortedKeys) key: grouped[key]!};
   }
 
-  void _openCreateSession(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
+  Future<void> _openCreateSession() async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
         builder: (_) => const TrainingSessionFormScreen(),
       ),
     );
+
+    if (changed == true && mounted) {
+      await _loadSessions();
+    }
   }
 
-  void _openEditSession(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const TrainingSessionFormScreen(isEditing: true),
+  Future<void> _openEditSession(TrainingSession session) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => TrainingSessionFormScreen(session: session),
       ),
     );
+
+    if (changed == true && mounted) {
+      await _loadSessions();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final sessions = _testSessions;
+    final sessionsProvider = context.watch<TrainingSessionsProvider>();
+    final sessions = sessionsProvider.sessions;
 
     return Scaffold(
       backgroundColor: AppColors.screenBackground,
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openCreateSession(context),
+        onPressed: sessionsProvider.isLoadingSessions ? null : _openCreateSession,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 4,
@@ -229,16 +137,65 @@ class SessionsScreen extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: sessions.isEmpty
-            ? const EmptyStateComponent(
-                message: 'Sin sesiones registradas',
-                description:
-                    'Registra tu primera sesión de entrenamiento para comenzar con tu historial.',
-              )
-            : _SessionsList(
-                groupedSessions: _groupByDay(sessions),
-                onSessionTap: (_) => _openEditSession(context),
+        child: _buildBody(sessionsProvider, sessions),
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    TrainingSessionsProvider sessionsProvider,
+    List<TrainingSession> sessions,
+  ) {
+    if (sessionsProvider.isLoadingSessions && sessions.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (sessionsProvider.sessionsError != null && sessions.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                sessionsProvider.sessionsError!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.bodyTextGrey,
+                  height: 1.4,
+                ),
               ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: _loadSessions,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (sessions.isEmpty) {
+      return const EmptyStateComponent(
+        message: 'Sin sesiones registradas',
+        description:
+            'Registra tu primera sesión de entrenamiento para comenzar con tu historial.',
+      );
+    }
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _loadSessions,
+      child: _SessionsList(
+        groupedSessions: _groupByDay(sessions),
+        onSessionTap: _openEditSession,
       ),
     );
   }
@@ -263,7 +220,7 @@ class _SessionsList extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 12, top: 8),
           child: Text(
-            SessionsScreen._formatDayHeader(entry.key),
+            _SessionsScreenState._formatDayHeader(entry.key),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -277,8 +234,8 @@ class _SessionsList extends StatelessWidget {
         children.add(
           TrainingSessionCard(
             session: session,
-            backgroundColor: SessionsScreen
-                ._cardColors[colorIndex % SessionsScreen._cardColors.length],
+            backgroundColor: _SessionsScreenState
+                ._cardColors[colorIndex % _SessionsScreenState._cardColors.length],
             onTap: () => onSessionTap(session),
           ),
         );
@@ -288,6 +245,7 @@ class _SessionsList extends StatelessWidget {
     }
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: children,
     );

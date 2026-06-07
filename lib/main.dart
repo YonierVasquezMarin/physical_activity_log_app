@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:physical_activity_log_app/providers/auth_provider.dart';
+import 'package:physical_activity_log_app/providers/training_sessions_provider.dart';
 import 'package:physical_activity_log_app/screens/init_screen.dart';
 import 'package:physical_activity_log_app/theme/app_colors.dart';
 
@@ -18,8 +19,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: authProvider,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider(create: (_) => TrainingSessionsProvider()),
+      ],
       child: MaterialApp(
         title: 'Mi Actividad Física',
         debugShowCheckedModeBanner: false,
