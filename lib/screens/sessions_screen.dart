@@ -126,6 +126,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     return Scaffold(
       backgroundColor: AppColors.screenBackground,
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'sessions-fab',
         onPressed: sessionsProvider.isLoadingSessions ? null : _openCreateSession,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,

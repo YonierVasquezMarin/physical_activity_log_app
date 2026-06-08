@@ -9,6 +9,11 @@ abstract final class ApiConstants {
   static const String categories = '$baseUrl/categories';
 
   static String category(int id) => '$categories/$id';
+
+  static const String goals = '$baseUrl/goals';
+
+  static String goal(int id) => '$goals/$id';
+
   static const String activities = '$baseUrl/activities';
   static const String trainingSessions = '$baseUrl/training-sessions';
 

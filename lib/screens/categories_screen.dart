@@ -88,6 +88,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'categories-fab',
         onPressed: categoriesProvider.isLoading ? null : _openCreateCategory,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
