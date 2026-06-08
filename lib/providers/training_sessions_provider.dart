@@ -64,6 +64,11 @@ class TrainingSessionsProvider extends ChangeNotifier {
     }
   }
 
+  void syncCategories(List<Category> categories) {
+    _categories = List<Category>.from(categories);
+    notifyListeners();
+  }
+
   Future<TrainingSession> createSession({
     required String authorizationHeader,
     required List<Activity> activities,

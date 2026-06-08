@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:physical_activity_log_app/providers/categories_provider.dart';
 import 'package:physical_activity_log_app/providers/auth_provider.dart';
 import 'package:physical_activity_log_app/providers/training_sessions_provider.dart';
 import 'package:physical_activity_log_app/screens/init_screen.dart';
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => TrainingSessionsProvider()),
+        ChangeNotifierProvider(create: (_) => CategoriesProvider()),
       ],
       child: MaterialApp(
         title: 'Mi Actividad Física',
