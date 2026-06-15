@@ -18,4 +18,6 @@ abstract final class ApiConstants {
   static const String trainingSessions = '$baseUrl/training-sessions';
 
   static String trainingSession(int id) => '$trainingSessions/$id';
+
+  static const String reportsSummary = '$baseUrl/reports/summary';
 }

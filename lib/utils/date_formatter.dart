@@ -1,3 +1,15 @@
+/// Formato ISO 8601 en UTC con sufijo Z (p. ej. para query params de reportes).
+String formatDateUtcZ(DateTime date) {
+  final utc = date.toUtc();
+  final year = utc.year.toString().padLeft(4, '0');
+  final month = utc.month.toString().padLeft(2, '0');
+  final day = utc.day.toString().padLeft(2, '0');
+  final hour = utc.hour.toString().padLeft(2, '0');
+  final minute = utc.minute.toString().padLeft(2, '0');
+  final second = utc.second.toString().padLeft(2, '0');
+  return '$year-$month-${day}T$hour:$minute:${second}Z';
+}
+
 String formatDateWithOffset(DateTime date) {
   final offset = date.timeZoneOffset;
   final sign = offset.isNegative ? '-' : '+';
