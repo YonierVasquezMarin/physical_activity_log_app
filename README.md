@@ -92,26 +92,161 @@ physical_activity_log_app/
 - ✅ Android
 - ✅ iOS
 
-## Próximos Pasos
+## Conexión con el Backend
 
-Después de la inicialización, los pasos típicos incluyen:
+La aplicación se comunica con una API REST alojada en **Render** mediante peticiones **HTTPS** en formato **JSON**.
+
+| Aspecto | Detalle |
+|---------|---------|
+| **Protocolo** | REST sobre HTTPS |
+| **Cliente HTTP** | Paquete [`http`](https://pub.dev/packages/http), encapsulado en `lib/services/http_service.dart` |
+| **URL base** | `https://physical-activity-log-api.onrender.com/api/v1` (definida en `lib/constants/api_constants.dart`) |
+| **Autenticación** | Bearer Token (JWT). Tras iniciar sesión, el token se envía en el encabezado `Authorization: Bearer <token>` en los endpoints protegidos |
+| **Persistencia de sesión** | `shared_preferences` guarda la sesión localmente para restaurarla al abrir la app |
+| **Estado global** | `provider` gestiona autenticación y datos de cada módulo |
+
+### Flujo de autenticación
+
+1. El usuario se **registra** (`POST /auth/register`) o **inicia sesión** (`POST /auth/login`).
+2. El backend devuelve un token JWT junto con su tipo (`token`, `tokenType`, `expiresIn`).
+3. La app consulta el perfil del usuario (`GET /auth/me`) y guarda la sesión localmente.
+4. Las operaciones de categorías, metas, actividades, sesiones de entrenamiento y reportes incluyen el encabezado `Authorization`.
+
+> **Nota**: El backend en Render puede tardar unos segundos en responder si estuvo inactivo (arranque en frío). Si la primera petición falla, espera un momento e inténtalo de nuevo.
+
+## URLs del Backend
+
+**URL base de la API:**
+
+```
+https://physical-activity-log-api.onrender.com/api/v1
+```
+
+### Autenticación
+
+| Método | Endpoint | Autenticación | Descripción |
+|--------|----------|---------------|-------------|
+| `POST` | `/auth/register` | No | Registro de usuario (`name`, `email`, `password`) |
+| `POST` | `/auth/login` | No | Inicio de sesión (`email`, `password`) |
+| `GET` | `/auth/me` | Bearer Token | Obtiene el usuario autenticado |
+
+### Categorías
+
+| Método | Endpoint | Autenticación |
+|--------|----------|---------------|
+| `GET` | `/categories` | Bearer Token |
+| `POST` | `/categories` | Bearer Token |
+| `PUT` | `/categories/{id}` | Bearer Token |
+| `DELETE` | `/categories/{id}` | Bearer Token |
+
+### Metas
+
+| Método | Endpoint | Autenticación |
+|--------|----------|---------------|
+| `GET` | `/goals` | Bearer Token |
+| `POST` | `/goals` | Bearer Token |
+| `PUT` | `/goals/{id}` | Bearer Token |
+| `DELETE` | `/goals/{id}` | Bearer Token |
+
+### Actividades y sesiones de entrenamiento
+
+| Método | Endpoint | Autenticación |
+|--------|----------|---------------|
+| `POST` | `/activities` | Bearer Token |
+| `GET` | `/training-sessions` | Bearer Token |
+| `POST` | `/training-sessions` | Bearer Token |
+| `PUT` | `/training-sessions/{id}` | Bearer Token |
+| `DELETE` | `/training-sessions/{id}` | Bearer Token |
+
+### Reportes
+
+| Método | Endpoint | Autenticación |
+|--------|----------|---------------|
+| `GET` | `/reports/summary?from={fecha}&to={fecha}&topActivitiesLimit={n}` | Bearer Token |
+
+Las fechas del reporte deben enviarse en formato UTC con sufijo `Z` (por ejemplo: `2026-01-01T00:00:00.000Z`).
+
+### Ejemplo de prueba con cURL
+
+**Registro de usuario:**
+
+```bash
+curl -X POST https://physical-activity-log-api.onrender.com/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Usuario Prueba","email":"prueba@ejemplo.com","password":"MiPassword123"}'
+```
+
+**Inicio de sesión:**
+
+```bash
+curl -X POST https://physical-activity-log-api.onrender.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"prueba@ejemplo.com","password":"MiPassword123"}'
+```
+
+**Consultar categorías (reemplaza `<TOKEN>` por el token obtenido en el login):**
+
+```bash
+curl https://physical-activity-log-api.onrender.com/api/v1/categories \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+## Ejecución y Pruebas de la Aplicación
+
+### Requisitos
+
+- Flutter SDK instalado y configurado (`flutter doctor` sin errores críticos)
+- Un emulador Android/iOS o un dispositivo físico conectado
+- Conexión a internet (la app consume la API en Render)
+
+### Instalación y ejecución
 
 1. **Instalar dependencias**:
    ```bash
    flutter pub get
    ```
 
-2. **Verificar la configuración**:
+2. **Verificar el entorno**:
    ```bash
    flutter doctor
    ```
 
-3. **Ejecutar la aplicación**:
+3. **Listar dispositivos disponibles**:
+   ```bash
+   flutter devices
+   ```
+
+4. **Ejecutar la aplicación**:
    ```bash
    flutter run
    ```
 
-4. **Agregar dependencias** en `pubspec.yaml` según las necesidades del proyecto
+   También puedes ejecutarla desde VS Code con la extensión de Flutter (F5) o seleccionando un dispositivo en la barra inferior.
+
+5. **Compilar APK de release** (opcional):
+   ```bash
+   flutter build apk --target-platform android-arm64 --release
+   ```
+
+### Prueba manual en la app
+
+1. Abre la app; si no hay sesión guardada, verás la pantalla de **inicio de sesión**.
+2. Crea una cuenta con **Registrarse** o inicia sesión con credenciales existentes.
+3. Navega por las pestañas principales:
+   - **Sesiones**: crear, editar y eliminar sesiones de entrenamiento.
+   - **Categorías**: administrar categorías de actividades.
+   - **Metas**: definir y gestionar metas con fechas de inicio y fin.
+   - **Reportes**: consultar resumen de actividad por rango de fechas (7, 30 o 90 días).
+   - **Cuenta**: ver datos del usuario y cerrar sesión.
+4. Usa **pull-to-refresh** en las listas para recargar datos desde el backend.
+
+### Pruebas automatizadas
+
+```bash
+flutter test
+```
+
+> Actualmente el proyecto no incluye pruebas unitarias o de widgets. El comando anterior sirve como referencia para cuando se agreguen archivos en el directorio `test/`.
 
 ## Notas Adicionales
 
